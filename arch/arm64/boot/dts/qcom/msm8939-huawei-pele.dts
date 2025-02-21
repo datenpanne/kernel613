@@ -1,0 +1,714 @@
+// SPDX-License-Identifier: GPL-2.0-only
+
+/dts-v1/;
+
+#include "msm8939-pm8916.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/leds/common.h>
+#include <dt-bindings/sound/apq8016-lpass.h>
+#include <dt-bindings/pinctrl/qcom,pmic-mpp.h>
+
+/ {
+	model = "Huawei MediaPad T2 7.0 Pro";
+	compatible = "huawei,pele", "qcom,msm8939";
+	chassis-type = "tablet";
+
+	aliases {
+		mmc0 = &sdhc_1; /* SDC1 eMMC slot */
+		mmc1 = &sdhc_2; /* SDC2 SD card slot */
+		serial0 = &blsp_uart2;
+	};
+
+	chosen {
+		stdout-path = "serial0";
+	};
+
+	reserved-memory {
+		cont_splash_mem: framebuffer@83000000 {
+			compatible = "removed-dma-pool";
+			reg = <0x0 0x83000000 0x0 0x1400000>;
+			no-map;
+		};
+
+		reserved@84400000 {
+			reg = <0x0 0x84400000 0x0 0x1C00000>;
+			no-map;
+		};
+
+		tz-hwlog@8c700000 {
+			reg = <0x0 0x8c700000 0x0 0x400000>;
+			no-map;
+		};
+
+		ramoops@8cb00000 {
+			compatible = "ramoops";
+			reg = <0x0 0x8cb00000 0x0 0x200000>;
+
+			record-size = <0x10000>;
+			console-size = <0x100000>;
+			ftrace-size = <0>;
+		};
+	};
+
+	battery: battery {
+		compatible = "simple-battery";
+		device-chemistry = "lithium-ion-polymer";
+		voltage-min-design-microvolt = <3300000>;
+		voltage-max-design-microvolt = <4350000>;
+		energy-full-design-microwatt-hours = <16074000>;
+		charge-full-design-microamp-hours = <4230000>;
+
+		//precharge-current-microamp = <1300000>;
+		//charge-term-current-microamp = <150000>;
+
+		ocv-capacity-celsius = <25>;
+		ocv-capacity-table-0 = <4330000 100>, <4265000 95>,
+			<4208000 90>, <4153000 85>, <4100000 80>, <4049000 75>,
+			<4001000 70>, <3962000 65>, <3919000 60>, <3872000 55>,
+			<3839000 50>, <3817000 45>, <3798000 40>, <3783000 35>,
+			<3767000 30>, <3747000 25>, <3729000 20>, <3709000 16>,
+			<3688000 13>, <3681000 11>, <3680000 10>, <3679000 9>,
+			<3677000 8>, <3674000 7>, <3666000 6>, <3641000 5>,
+			<3597000 4>, <3537000 3>, <3457000 2>, <3336000 1>,
+			<3000000 0>;
+	};
+
+	gpio-hall-sensor {
+		compatible = "gpio-keys";
+
+		pinctrl-0 = <&gpio_hall_sensor_default>;
+		pinctrl-names = "default";
+
+		label = "GPIO Hall Effect Sensor";
+
+		event-hall-sensor {
+			label = "Hall Effect Sensor";
+			gpios = <&tlmm 69 GPIO_ACTIVE_LOW>;
+			linux,input-type = <EV_SW>;
+			linux,code = <SW_LID>;
+			linux,can-disable;
+		};
+	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+
+		pinctrl-0 = <&gpio_keys_default>;
+		pinctrl-names = "default";
+
+		label = "GPIO Buttons";
+
+		button-volume-up {
+			label = "Volume Up";
+			gpios = <&tlmm 107 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_VOLUMEUP>;
+		};
+	};
+
+	gpio-leds {
+		compatible = "gpio-leds";
+
+		pinctrl-0 = <&gpio_leds_default>;
+		pinctrl-names = "default";
+
+		led-0 {
+			gpios = <&tlmm 8 GPIO_ACTIVE_HIGH>;
+			color = <LED_COLOR_ID_RED>;
+			default-state = "off";
+			function = LED_FUNCTION_INDICATOR;
+			retain-state-suspended;
+		};
+
+		led-1 {
+			gpios = <&tlmm 9 GPIO_ACTIVE_HIGH>;
+			color = <LED_COLOR_ID_GREEN>;
+			default-state = "off";
+			function = LED_FUNCTION_INDICATOR;
+			retain-state-suspended;
+		};
+
+		led-2 {
+			gpios = <&tlmm 1 GPIO_ACTIVE_HIGH>;
+			color = <LED_COLOR_ID_BLUE>;
+			default-state = "off";
+			function = LED_FUNCTION_INDICATOR;
+			retain-state-suspended;
+		};
+	};
+
+	reg_lcd_vddio: regulator-lcd-vddio {
+		compatible = "regulator-fixed";
+		regulator-name = "vddio-incell";
+		vin-supply = <&pm8916_l16>;
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
+
+	reg_lcd_vsp: regulator-lcd-vsp {
+		compatible = "regulator-fixed";
+		regulator-name = "vsp";
+		regulator-min-microvolt = <5400000>;
+		regulator-max-microvolt = <5400000>;
+		regulator-always-on;
+		regulator-boot-on;
+
+		gpio = <&tlmm 97 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		pinctrl-names = "default";
+		pinctrl-0 = <&lcd_vsp_default>;
+	};
+
+	reg_lcd_vsn: regulator-lcd-vsn {
+		compatible = "regulator-fixed";
+		regulator-name = "vsn";
+		regulator-min-microvolt = <5400000>;
+		regulator-max-microvolt = <5400000>;
+		regulator-always-on;
+		regulator-boot-on; 
+
+		gpio = <&tlmm 32 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		pinctrl-names = "default";
+		pinctrl-0 = <&lcd_vsn_default>;
+	};
+
+	reg_tp_vdd: regulator-tp-vdd {
+		compatible = "regulator-fixed";
+		regulator-name = "tp_vdd";
+		/*regulator-min-microvolt = <2850000>;
+		regulator-max-microvolt = <2850000>;
+		regulator-always-on;*/
+		regulator-boot-on; 
+
+		gpio = <&tlmm 112 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		pinctrl-names = "default";
+		pinctrl-0 = <&tp_vdd_default>;
+	};
+
+	reg_tp_vddio: regulator-tp-vddio {
+		compatible = "regulator-fixed";
+		regulator-name = "tp_vddio";
+		/*vin-supply = <&pm8916_l16>;
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-always-on;*/
+		regulator-boot-on; 
+
+		gpio = <&tlmm 10 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		pinctrl-names = "default";
+		pinctrl-0 = <&tp_vddio_default>;
+	};
+
+	usb_id: usb-id {
+		compatible = "linux,extcon-usb-gpio";
+		id-gpios = <&tlmm 118 GPIO_ACTIVE_HIGH>;
+		pinctrl-0 = <&usb_id_default>;
+		pinctrl-names = "default";
+	};
+};
+
+&blsp_i2c2 {
+	status = "okay";
+
+	accelerometer@18 {
+		compatible = "bosch,bma255";
+		reg = <0x18>;
+
+		interrupt-parent = <&tlmm>;
+		interrupts = <115 IRQ_TYPE_EDGE_RISING>;
+
+		vdd-supply = <&pm8916_l17>;
+		vddio-supply = <&pm8916_l6>;
+
+		mount-matrix = "0", "1", "0",
+			       "1", "0", "0",
+			       "0", "0", "1";
+
+		pinctrl-0 = <&accel_int_default>;
+		pinctrl-names = "default";
+	};
+
+	magnetometer@c {
+		compatible = "asahi-kasei,ak09911";
+		reg = <0x0c>;
+		vdd-supply = <&pm8916_l17>;
+		vid-supply = <&pm8916_l6>;
+		reset-gpios = <&tlmm 36 GPIO_ACTIVE_LOW>;
+		pinctrl-0 = <&mag_reset_default>;
+		pinctrl-names = "default";
+	};
+
+	flash-led-controller@63 {
+		compatible = "leds-lm3642";
+		reg = <0x63>;
+
+		pinctrl-0 = <&camera_rear_flash_default>;
+		pinctrl-1 = <&camera_rear_flash_sleep>;
+		pinctrl-names = "default","sleep";
+
+		//gpios = <&tlmm 86 GPIO_ACTIVE_HIGH>,<&tlmm 31 GPIO_ACTIVE_HIGH >;
+
+		flash_led {
+			linux,default-trigger = "flash";
+			function = LED_FUNCTION_FLASH;
+			color = <LED_COLOR_ID_WHITE>;
+			gpios = <&tlmm 86 GPIO_ACTIVE_HIGH>;
+			led-sources = <0>, <1>;
+		};
+		torch_led {
+			linux,default-trigger = "torch";
+			function = LED_FUNCTION_TORCH;
+			color = <LED_COLOR_ID_WHITE>;
+			gpios = <&tlmm 31 GPIO_ACTIVE_HIGH >;
+			led-sources = <0>, <0>;
+		};
+	};
+};
+/*
+&blsp_i2c4 {
+	status = "okay";
+
+	charger: bq24296@6b {
+		compatible = "ti,bq24296";
+		reg = <0x6b>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <62 IRQ_TYPE_EDGE_FALLING>;
+		charge-enable-gpios = <&tlmm 108 GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default", "sleep";
+		pinctrl-0 = <&bq24192_charger_default &bq24192_ce_default>;
+		pinctrl-1 = <&bq24192_charger_sleep>;
+		monitored-battery = <&battery>;
+		ti,system-minimum-microvolt = <3350000>;
+		omit-battery-class;
+		usb_otg_vbus: usb-otg-vbus {};
+		//usb_otg_vbus: usb-otg-vbus {
+		//	regulator-min-microvolt = <4900000>;
+		//	regulator-max-microvolt = <5000000>;
+		//};
+	};
+};*/
+
+&blsp_i2c5 {
+	status = "okay";
+
+	touchscreen@1c {
+		compatible = "cypress,tt21000";
+
+		reg = <0x1c>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <13 IRQ_TYPE_EDGE_FALLING>;
+
+		reset-gpios = <&tlmm 12 GPIO_ACTIVE_LOW>;
+
+		/*
+		 * NOTE: vdd and vddio should be gpios use them as
+		 * fixed regulator. It works for now.
+		 */
+		vdd-supply = <&reg_tp_vdd>;
+		vddio-supply = <&reg_tp_vddio>;
+
+		pinctrl-0 = <&touchscreen_default>;
+		pinctrl-names = "default";
+	};
+};
+
+&blsp_uart2 {
+	status = "okay";
+};
+
+&gpu {
+	status = "okay";
+};
+
+&lpass {
+	status = "okay";
+};
+
+&lpass_codec {
+	status = "okay";
+};
+
+&mdss {
+	status = "okay";
+};
+
+&mdss_dsi0 {
+	pinctrl-0 = <&mdss_default &mdss_te_default>;
+	pinctrl-1 = <&mdss_sleep &mdss_te_sleep>;
+	pinctrl-names = "default", "sleep";
+	status = "okay";
+
+	panel@0 {
+		compatible = "huawei,pele-panel";
+		reg = <0>;
+
+		reset-gpios = <&tlmm 25 GPIO_ACTIVE_LOW>;
+		disp-te-gpios = <&tlmm 24 GPIO_ACTIVE_HIGH>;
+
+		vddio-supply = <&pm8916_l6>;
+		vddio-incell-supply = <&reg_tp_vddio>;
+		vsp-supply = <&reg_lcd_vsp>;
+		vsn-supply = <&reg_lcd_vsn>;
+		vcc-gpios = <&tlmm 2 GPIO_ACTIVE_HIGH>;
+		backlight-gpios = <&tlmm 3 GPIO_ACTIVE_HIGH>;
+		vled-gpios = <&tlmm 109 GPIO_ACTIVE_HIGH>;
+
+		port {
+			panel_in: endpoint {
+				remote-endpoint = <&mdss_dsi0_out>;
+			};
+		};
+	};
+};
+
+&mdss_dsi0_out {
+	data-lanes = <0 1 2 3>;
+	remote-endpoint = <&panel_in>;
+};
+
+&mdss_dsi0_phy {
+	qcom,dsi-phy-regulator-ldo-mode;
+	status = "okay";
+};
+
+&pm8916_bms {
+	status = "okay";
+
+	monitored-battery = <&battery>;
+};
+
+&pm8916_codec {
+	qcom,micbias-lvl = <2800>;
+	qcom,mbhc-vthreshold-low = <75 150 237 450 500>;
+	qcom,mbhc-vthreshold-high = <75 150 237 450 500>;
+	qcom,hphl-jack-type-normally-open;
+	status = "okay";
+};
+
+&pm8916_mpps {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pm8916_mpp2_in &pm8916_mpp4_in>;
+
+	pm8916_mpp2_in: pm8916-mpp2-in-state {
+		pinconf {
+			pins = "mpp2";
+			function = "analog"; //input
+			qcom,amux-route = <1>; //PMIC_MPP_AMUX_ROUTE_CH6
+		};
+	};
+
+	pm8916_mpp4_in: pm8916-mpp4-in-state {
+		pinconf {
+			pins = "mpp4";
+			function = "analog"; //input
+			qcom,amux-route = <3>; //PMIC_MPP_AMUX_ROUTE_CH8
+		};
+	};
+};
+
+&pm8916_l8 {
+	regulator-min-microvolt = <2950000>;
+	regulator-max-microvolt = <2950000>;
+};
+
+&pm8916_resin {
+	linux,code = <KEY_VOLUMEDOWN>;
+	status = "okay";
+};
+
+&pm8916_rpm_regulators {
+	pm8916_l16: l16 {
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+	};
+
+	pm8916_l17: l17 {
+		regulator-min-microvolt = <2850000>;
+		regulator-max-microvolt = <2850000>;
+	};
+};
+
+&pm8916_vadc {
+	channel@6 {
+		reg = <VADC_VBAT_SNS>;
+		//reg = <0x6>;
+		//reg = <VADC_VBAT_SNS>;
+		qcom,pre-scaling = <1 3>;
+		label = "vbat_sns";
+	};
+
+	channel@11 {
+		reg = <VADC_P_MUX2_1_1>;
+		//qcom,decimation = <512>;
+		qcom,pre-scaling = <1 1>;
+		//qcom,ratiometric;
+		qcom,hw-settle-time = <200>;
+		label = "mpp2_div1";
+	};
+
+	channel@13 {
+		reg = <VADC_P_MUX4_1_1>;
+		//qcom,decimation = <512>;
+		qcom,pre-scaling = <1 1>;
+		qcom,hw-settle-time = <200>;
+		label = "mpp4_div1";
+	};
+
+	channel@31 {
+		//reg = <0x31>;
+		reg = <VADC_LR_MUX2_BAT_ID>;
+		qcom,pre-scaling = <1 1>;
+		qcom,ratiometric;
+		qcom,hw-settle-time = <200>;
+		label = "batt_id";
+	};
+
+	channel@36 {
+		reg = <VADC_LR_MUX7_HW_ID>;
+		//reg = <0x36>;
+		qcom,pre-scaling = <1 1>;
+		qcom,ratiometric;
+		qcom,hw-settle-time = <200>;
+		label = "pa_therm0";
+	};
+};
+
+&pm8916_vib {
+	status = "okay";
+};
+
+&sdhc_1 {
+	status = "okay";
+};
+
+&sdhc_2 {
+	pinctrl-0 = <&sdc2_default &sdc2_cd_default>;
+	pinctrl-1 = <&sdc2_sleep &sdc2_cd_default>;
+	pinctrl-names = "default", "sleep";
+
+	cd-gpios = <&tlmm 38 GPIO_ACTIVE_HIGH>;
+
+	status = "okay";
+};
+
+&sound {
+	model = "msm8916";
+	audio-routing =
+		"AMIC1", "MIC BIAS Internal1",
+		"AMIC2", "MIC BIAS Internal2",
+		"AMIC3", "MIC BIAS Internal3";
+
+	pinctrl-0 = <&cdc_pdm_default>;
+	pinctrl-1 = <&cdc_pdm_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	status = "okay";
+
+	dai-link-primary {
+		link-name = "Primary MI2S";
+
+		cpu {
+			sound-dai = <&lpass MI2S_PRIMARY>;
+		};
+
+		codec {
+			sound-dai = <&lpass_codec 0>, <&pm8916_codec 0>;
+		};
+	};
+
+	dai-link-tertiary {
+		link-name = "Tertiary MI2S";
+
+		cpu {
+			sound-dai = <&lpass MI2S_TERTIARY>;
+		};
+
+		codec {
+			sound-dai = <&lpass_codec 1>, <&pm8916_codec 1>;
+		};
+	};
+};
+
+&usb {
+	extcon = <&usb_id>, <&usb_id>;
+	status = "okay";
+};
+
+&usb_hs_phy {
+	extcon = <&usb_id>;
+};
+
+&wcnss {
+	status = "okay";
+};
+
+&wcnss_iris {
+	compatible = "qcom,wcn3620";
+};
+
+&wcnss_mem {
+	status = "okay";
+};
+
+&tlmm {
+	accel_int_default: accel-int-default-state {
+		pins = "gpio115";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	camera_rear_flash_default: camera-rear-flash-default-state {
+		pins = "gpio31", "gpio86";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	camera_rear_flash_sleep: camera-rear-flash-sleep-state {
+		pins = "gpio31", "gpio86";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
+
+	gpio_hall_sensor_default: gpio-hall-sensor-default-state {
+		pins = "gpio69";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	gpio_keys_default: gpio-keys-default-state {
+		pins = "gpio107";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
+	};
+
+	gpio_leds_default: gpio-leds-default-state {
+		pins = "gpio8", "gpio9", "gpio1";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	lcd_vsp_default: lcd-vsp-default-state {
+		pins = "gpio97";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	lcd_vsn_default: lcd-vsn-default-state {
+		pins = "gpio32";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	mag_reset_default: mag-reset-default-state {
+		pins = "gpio36";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	mdss_default: mdss-default-state {
+		pins = "gpio25";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-disable;
+	};
+
+	mdss_sleep: mdss-sleep-state {
+		pins = "gpio25";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
+
+	mdss_te_default: mdss-te-default-state {
+		pins = "gpio24";
+		//function = "gpio";
+		function = "mdp_vsync";
+		drive-strength = <2>;
+		bias-pull-disable;
+	};
+
+	mdss_te_sleep: mdss-te-sleep-state {
+		pins = "gpio24";
+		//function = "gpio";
+		function = "mdp_vsync";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
+
+	prox_irq_default: prox-irq-default-state {
+		pins = "gpio113";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	reg_lcd_en_default: reg-lcd-en-default-state {
+		pins = "gpio32", "gpio97";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	sdc2_cd_default: sdc2-cd-default-state {
+		pins = "gpio38";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	touchscreen_default: touchscreen-default-state {
+		pins = "gpio12", "gpio13";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	tp_vdd_default: reg-tp-vdd-default-state {
+		pins = "gpio112";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
+	};
+
+	tp_vddio_default: reg-tp-vddio-default-state {
+		pins = "gpio10";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
+	};
+
+	usb_id_default: usb-id-default-state {
+		pins = "gpio118";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-pull-up;
+	};
+};
+
+/ {
+	fuel-gauge {
+	compatible = "adc-battery";
+	// #address-cells = <1>;
+	//#size-cells = <0>;
+
+		io-channels = <&pm8916_vadc 0x6>;//, <&pm8916_vadc 0x30>;//, <&pm8916_vadc 0x11>;
+		io-channel-names = "voltage";//, "temperature";//, "current";
+
+		//charged-gpios = <&tlmm 62>;
+		monitored-battery = <&battery>;
+		//power-supplies = <&charger>;
+	};
+};
